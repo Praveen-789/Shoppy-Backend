@@ -14,7 +14,7 @@ async function placeOrder(user, checkoutKey, address, expectedItems) {
     await session.withTransaction(async () => {
       const duplicate = await Order.findOne({ user, checkoutKey }).session(session).lean();
       if (duplicate) { order = duplicate; return; }
-      console.log('CartItem', CartItem);
+      // console.log('CartItem', CartItem);
       const rows = await CartItem.find({ user }).sort({ _id: 1 }).session(session).lean();
       if (!rows.length) fail(409, 'Your cart is empty.');
       if (rows.length !== expectedItems.length) fail(409, 'Your cart changed. Review it before ordering.');
@@ -41,7 +41,7 @@ async function placeOrder(user, checkoutKey, address, expectedItems) {
       order = created[0].toObject();
       await CartItem.deleteMany({ user, _id: { $in: rows.map(row => row._id) } }, { session });
     });
-    console.log('Order', order);
+    // console.log('Order', order);
     return order;
   } catch (error) {
     // Two requests with the same key may race; both must return the same saved order.
