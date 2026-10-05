@@ -1,0 +1,12 @@
+﻿const express = require('express');
+const requireAuth = require('../middleware/auth');
+const { handle } = require('../controllers/cartController');
+const router = express.Router();
+router.use(requireAuth);
+router.use((request, response, next) => { response.set('Cache-Control', 'no-store'); next(); });
+router.get('/', handle);
+router.post('/items', handle);
+router.patch('/items/:id', handle);
+router.delete('/items/:id', handle);
+router.delete('/', handle);
+module.exports = router;
