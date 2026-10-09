@@ -55,8 +55,7 @@ duplicate requests, competing checkouts, order ownership and product snapshots.
 
 ## Later
 
-Delivery status changes, vendor order management, cancellations, and recording
-collected cash are future work. This version displays Placed and Payment pending.
+Vendor fulfilment and COD collection records are implemented; see FULFILMENT.md. Cancellations and online payments remain future work.
 
 
 ## Editing an order address
@@ -71,3 +70,4 @@ cart are untouched. The UI shows the saved address and retains edits after error
 OrderAddressEditor.tsx handles the form; addressFields.ts shares field definitions
 with Checkout.tsx. npm run test:orders includes ownership, invalid addresses,
 persisted changes and locked-status checks.
+Address edits now also require every vendor portion to remain placed. See FULFILMENT.md for vendor delivery and payment progress.

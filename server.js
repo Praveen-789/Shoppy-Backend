@@ -10,6 +10,9 @@ const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth');
 const app = express();
 const PORT = process.env.PORT || 5000;
+const logs = require('./services/logWriter')();
+// Register before body parsing so malformed requests are traced too.
+app.use(require('./middleware/requestLogger')(logs.write));
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 app.use('/api', (request, response, next) => {
@@ -36,10 +39,12 @@ app.get('/', (request, response) => response.json({ message: 'Welcome to the Sho
 app.get('/api/health', (request, response) => response.json({ status: 'ok', message: 'Server is running' }));
 app.use((request, response) => response.status(404).json({ message: 'Route not found' }));
 app.use((error, request, response, next) => {
+  if (response.headersSent) return next(error);
   if (error.type === 'entity.parse.failed') return response.status(400).json({ message: 'Invalid JSON body.' });
   if (error.type === 'entity.too.large') return response.status(413).json({ message: 'Request body is too large.' });
-  console.error('Request failed:', error.message);
-  response.status(500).json({ message: 'Something went wrong. Please try again.' });
+  // Keep raw error messages out of logs: database errors can include private data.
+  logs.write(JSON.stringify({ timestamp: new Date().toISOString(), event: 'request_error', requestId: request.id, errorType: error.name || 'Error' }));
+  response.status(500).json({ message: 'Something went wrong. Please try again.', requestId: request.id });
 });
 async function startServer() {
   try {

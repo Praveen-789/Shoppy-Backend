@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const CartItem = require('../models/CartItem');
+const { buildVendorOrders } = require('./fulfilment');
 function fail(status, message) { const error = new Error(message); error.status = status; throw error; }
 
 // Stock, order creation and cart removal commit together, or all roll back.
@@ -37,7 +38,8 @@ async function placeOrder(user, checkoutKey, address, expectedItems) {
         totalPaise += unitPricePaise * row.quantity;
         if (!Number.isSafeInteger(totalPaise)) fail(409, 'The order total is too large.');
       }
-      const created = await Order.create([{ user, checkoutKey, address, items, totalPaise, deliveryFeePaise: 0 }], { session });
+      const vendorOrders = await buildVendorOrders(items, { session });
+      const created = await Order.create([{ user, checkoutKey, address, items, vendorOrders, totalPaise, deliveryFeePaise: 0 }], { session });
       order = created[0].toObject();
       await CartItem.deleteMany({ user, _id: { $in: rows.map(row => row._id) } }, { session });
     });
@@ -57,18 +59,18 @@ async function placeOrder(user, checkoutKey, address, expectedItems) {
 }
 async function listOrders(user, page) {
   const limit = 10;
-  const orders = await Order.find({ user }).select('-checkoutKey -user').sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit + 1).lean();
+  const orders = await Order.find({ user }).select('-checkoutKey -user -fulfilmentVersion').sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit + 1).lean();
   return { orders: orders.slice(0, limit), hasMore: orders.length > limit };
 }
 // Ownership and status are checked in the write itself, so a status change cannot race past them.
 async function updateAddress(user, id, address) {
   const order = await Order.findOneAndUpdate(
-    { _id: id, user, status: 'placed' },
+    { _id: id, user, status: 'placed', vendorOrders: { $not: { $elemMatch: { status: { $ne: 'placed' } } } } },
     { $set: { address } },
     { returnDocument: 'after', runValidators: true }
-  ).select('-checkoutKey -user').lean();
+  ).select('-checkoutKey -user -fulfilmentVersion').lean();
   if (order) return order;
   if (!await Order.exists({ _id: id, user })) fail(404, 'Order not found.');
-  fail(409, 'The address can only be edited while your order is placed.');
+  fail(409, 'The address can only be edited before any vendor confirms your order.');
 }
 module.exports = { placeOrder, listOrders, updateAddress };
