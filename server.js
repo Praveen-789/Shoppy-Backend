@@ -23,6 +23,7 @@ app.use('/api', (request, response, next) => {
   next();
 });
 app.use('/api/cart', require('./routes/cart'));
+app.use('/api/wishlist', require('./routes/wishlist'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/vendor', require('./routes/vendor'));
 app.use('/api/products', require('./routes/products'));
@@ -54,6 +55,7 @@ async function startServer() {
     // Ensure the unique email index exists before accepting registrations.
     await require('./models/User').init();
     await require('./models/CartItem').init();
+    await require('./models/WishlistItem').init();
     await require('./models/Order').init();
     console.log('MongoDB connected!');
     const server = app.listen(PORT, '127.0.0.1', () => console.log(`Shoppy backend is running at http://localhost:${PORT}`));

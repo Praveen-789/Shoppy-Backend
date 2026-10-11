@@ -59,6 +59,21 @@ async function test() {
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     const report = await response.json();
+    const csvResponse = await fetch(`${base}/vendor/sales/export.csv?from=2026-10-01&to=2026-10-01`, { headers: { Cookie: a.cookie } });
+    assert.equal(csvResponse.status, 200);
+    const csv = await csvResponse.text();
+    assert.doesNotMatch(csv, /Private other product/);
+    assert.equal(csv.split('\r\n').length, 4, 'Header, two purchased item rows, trailing newline.');
+    assert.match(csv, /"2","125.50","251.00","delivered","collected"/);
+    assert.match(csv, /"3","125.50","376.50","placed","pending"/);
+    const excelResponse = await fetch(`${base}/vendor/sales/export.xlsx?from=2026-10-01&to=2026-10-01`, { headers: { Cookie: a.cookie } });
+    assert.equal(excelResponse.status, 200);
+    const workbook = new (require('exceljs').Workbook)();
+    await workbook.xlsx.load(Buffer.from(await excelResponse.arrayBuffer()));
+    const sheet = workbook.getWorksheet('Sales');
+    assert.equal(sheet.rowCount, 3);
+    assert.equal(sheet.getCell('C2').value, 'Snapshot name');
+    assert.equal(sheet.getCell('F2').value + sheet.getCell('F3').value, 627.5);
     assert.deepEqual(report.summary, {
       orderCount: 2, deliveredOrderCount: 1, orderedValuePaise: 62750,
       deliveredSalesPaise: 25100, collectedCodPaise: 25100, pendingCodPaise: 37650,

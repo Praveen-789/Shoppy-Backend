@@ -58,8 +58,8 @@ Get-Content "D:\Shoppy\shoppy-node\logs\shoppy-$([DateTime]::UtcNow.ToString('yy
 
 ## Next learning steps
 
-1. Streaming vendor CSV exports: database cursors, async iteration, streams,
-   backpressure and cancellation.
+1. Streaming vendor CSV exports (implemented): database cursors, async iteration,
+   streams, backpressure and cancellation. Read `CSV-STREAMING.md`.
 2. Graceful shutdown: process signals, stopping new requests and closing MongoDB.
 3. Persistent background jobs: order notifications, retries and idempotency.
 4. Live order progress: Server-Sent Events, connection cleanup and authorization.

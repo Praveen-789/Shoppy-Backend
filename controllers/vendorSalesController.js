@@ -38,4 +38,4 @@ async function getSales(request, response, next) {
     });
   } catch (error) { next(error); }
 }
-module.exports = { getSales };
+module.exports = { getSales, parseDate };

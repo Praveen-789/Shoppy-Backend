@@ -4,6 +4,8 @@
   "description": "Learning backend for the Shoppy online shopping project",
   "main": "server.js",
   "scripts": {
+    "test:excel": "node scripts/sales-excel-test.cjs",
+    "test:csv": "node scripts/sales-csv-test.cjs",
     "test:log-files": "node scripts/log-files-test.cjs",
     "test:logging": "node scripts/request-logging-test.cjs",
     "test:sales": "node scripts/vendor-sales-smoke-test.cjs",
@@ -19,7 +21,8 @@
     "seed:products": "node seed-products.js",
     "test:products": "node scripts/products-smoke-test.cjs",
     "check:cloudinary": "node scripts/check-cloudinary.cjs",
-    "setup:cloudinary": "node scripts/setup-cloudinary-folder.cjs"
+    "setup:cloudinary": "node scripts/setup-cloudinary-folder.cjs",
+    "test:wishlist": "node scripts/wishlist-smoke-test.cjs"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +32,7 @@
     "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.5",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "jsonwebtoken": "^9.0.3",
@@ -36,6 +40,10 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
   }
 }
-
