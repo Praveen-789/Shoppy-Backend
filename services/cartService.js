@@ -19,16 +19,17 @@ async function availableProduct(id) {
   if (product.stock < 1) fail(409, 'This product is out of stock.');
   return product;
 }
-async function addItem(user, productId) {
+async function addItem(user, productId, quantity = 1) {
   const product = await availableProduct(productId);
-  const filter = { user, product: productId, quantity: { $lt: product.stock } };
-  let result = await CartItem.updateOne(filter, { $inc: { quantity: 1 } });
+  if (quantity > product.stock) fail(409, `Only ${product.stock} available. Reduce the quantity.`);
+  const filter = { user, product: productId, quantity: { $lte: product.stock - quantity } };
+  let result = await CartItem.updateOne(filter, { $inc: { quantity } });
   if (!result.matchedCount) {
-    try { await CartItem.create({ user, product: productId, quantity: 1 }); }
+    try { await CartItem.create({ user, product: productId, quantity }); }
     catch (error) {
       if (error.code !== 11000) throw error;
       // Another device may have inserted this item. Increment atomically, within stock.
-      result = await CartItem.updateOne(filter, { $inc: { quantity: 1 } });
+      result = await CartItem.updateOne(filter, { $inc: { quantity } });
       if (!result.matchedCount) fail(409, 'You have reached the available stock for this product.');
     }
   }

@@ -7,7 +7,9 @@ async function handle(request, response, next) {
     if (request.method === 'GET') result = await service.getCart(user);
     else if (request.method === 'POST') {
       if (!mongoose.isObjectIdOrHexString(request.body?.productId)) return response.status(400).json({ message: 'Invalid product ID.' });
-      result = await service.addItem(user, request.body.productId);
+      const quantity = request.body.quantity === undefined ? 1 : request.body.quantity;
+      if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000) return response.status(400).json({ message: 'Quantity must be a positive whole number.' });
+      result = await service.addItem(user, request.body.productId, quantity);
     } else if (request.params.id) {
       if (!mongoose.isObjectIdOrHexString(request.params.id)) return response.status(400).json({ message: 'Invalid cart item ID.' });
       if (request.method === 'PATCH') {

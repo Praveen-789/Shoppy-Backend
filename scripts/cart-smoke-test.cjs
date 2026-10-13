@@ -31,6 +31,17 @@ async function test() {
     const body = { productId: String(product._id), user: b.id, price: 1 };
     assert.equal((await call('/cart')).status, 401);
     assert.equal((await call('/cart/items', 'POST', { productId: 'bad' }, a.cookie)).status, 400);
+    for (const quantity of [0, -1, 1.5, '2', null, 1000001]) {
+      assert.equal((await call('/cart/items', 'POST', { ...body, quantity }, a.cookie)).status, 400);
+    }
+    assert.equal((await call('/cart/items', 'POST', { ...body, quantity: 3 }, a.cookie)).status, 409);
+    assert.equal(await CartItem.countDocuments({ user: a.id }), 0);
+    const bulk = await call('/cart/items', 'POST', { ...body, quantity: 2 }, a.cookie);
+    assert.equal(bulk.status, 200);
+    assert.equal((await bulk.json()).items[0].quantity, 2);
+    assert.equal((await call('/cart/items', 'POST', { ...body, quantity: 2 }, a.cookie)).status, 409);
+    assert.equal((await CartItem.findOne({ user: a.id })).quantity, 2);
+    await call('/cart', 'DELETE', undefined, a.cookie);
     const first = await call('/cart/items', 'POST', body, a.cookie);
     assert.equal(first.status, 200);
     const saved = await first.json();

@@ -4,6 +4,7 @@
   "description": "Learning backend for the Shoppy online shopping project",
   "main": "server.js",
   "scripts": {
+    "test:shutdown": "node scripts/shutdown-test.cjs",
     "test:excel": "node scripts/sales-excel-test.cjs",
     "test:csv": "node scripts/sales-csv-test.cjs",
     "test:log-files": "node scripts/log-files-test.cjs",

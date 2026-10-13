@@ -59,7 +59,15 @@ async function startServer() {
     await require('./models/Order').init();
     console.log('MongoDB connected!');
     const server = app.listen(PORT, '127.0.0.1', () => console.log(`Shoppy backend is running at http://localhost:${PORT}`));
-    server.on('error', (error) => { console.error('Server failed:', error.message); process.exitCode = 1; });
+    const shutdown = require('./services/gracefulShutdown')({
+      server,
+      disconnect: () => mongoose.disconnect(),
+      flushLogs: () => logs.flush(),
+    });
+    server.on('error', (error) => {
+      console.error('Server failed:', error.message);
+      void shutdown('server error', 1);
+    });
   } catch (error) {
     console.error('Startup failed:', error.message);
     await mongoose.disconnect();
