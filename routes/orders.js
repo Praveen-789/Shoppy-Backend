@@ -5,5 +5,7 @@ router.use(requireAuth);
 router.use((request, response, next) => { response.set('Cache-Control', 'no-store'); next(); });
 router.get('/', controller.list);
 router.post('/', controller.place);
+router.patch('/:id/items/:productId/cancel', controller.cancelItem);
+router.patch('/:id/cancel', controller.cancel);
 router.patch('/:id/address', controller.updateAddress);
 module.exports = router;

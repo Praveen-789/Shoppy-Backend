@@ -23,7 +23,8 @@
     "test:products": "node scripts/products-smoke-test.cjs",
     "check:cloudinary": "node scripts/check-cloudinary.cjs",
     "setup:cloudinary": "node scripts/setup-cloudinary-folder.cjs",
-    "test:wishlist": "node scripts/wishlist-smoke-test.cjs"
+    "test:wishlist": "node scripts/wishlist-smoke-test.cjs",
+    "test:cancellation": "node scripts/cancellation-smoke-test.cjs"
   },
   "keywords": [],
   "author": "",

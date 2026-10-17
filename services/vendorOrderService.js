@@ -8,7 +8,7 @@ function vendorView(order, vendor) {
   return {
     _id: order._id, createdAt: order.createdAt, address: order.address,
     items: order.items.filter(item => String(item.vendor) === String(vendor)),
-    subtotalPaise: portion.subtotalPaise, status: portion.status,
+    subtotalPaise: portion.subtotalPaise, payablePaise: portion.payablePaise ?? (portion.status === 'cancelled' ? 0 : portion.subtotalPaise), status: portion.status,
     paymentStatus: portion.paymentStatus, history: portion.history, paymentMethod: order.paymentMethod,
   };
 }
@@ -25,6 +25,7 @@ async function updateStatus(vendor, id, expectedStatus, status, cashCollected) {
   if (!order) fail(404, 'Order not found.');
   const portion = order.vendorOrders.find(part => String(part.vendor) === String(vendor));
   if (portion.status !== expectedStatus) fail(409, 'Order status changed. Refresh before updating.');
+  if (order.status === 'cancelled' || !statuses.includes(portion.status)) fail(409, 'Cancelled orders cannot be updated.');
   const next = statuses[statuses.indexOf(portion.status) + 1];
   if (!next || status !== next) fail(409, 'Follow the next delivery step. Completed deliveries cannot be changed.');
   if (status === 'delivered' && cashCollected !== true) fail(400, 'Confirm that the cash-on-delivery amount was collected.');

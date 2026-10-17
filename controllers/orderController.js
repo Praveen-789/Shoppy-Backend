@@ -49,4 +49,26 @@ async function updateAddress(request, response, next) {
     next(error);
   }
 }
-module.exports = { place, list, updateAddress, validateCheckout };
+async function cancel(request, response, next) {
+  try {
+    if (!mongoose.isObjectIdOrHexString(request.params.id)) return response.status(400).json({ message: 'Invalid order ID.' });
+    const order = await service.cancelOrder(request.user.id, request.params.id);
+    response.json({ order });
+  } catch (error) {
+    if (error.status) return response.status(error.status).json({ message: error.message });
+    next(error);
+  }
+}
+async function cancelItem(request, response, next) {
+  try {
+    if (!mongoose.isObjectIdOrHexString(request.params.id) || !mongoose.isObjectIdOrHexString(request.params.productId)) {
+      return response.status(400).json({ message: 'Invalid order or product ID.' });
+    }
+    const order = await service.cancelOrder(request.user.id, request.params.id, request.params.productId);
+    response.json({ order });
+  } catch (error) {
+    if (error.status) return response.status(error.status).json({ message: error.message });
+    next(error);
+  }
+}
+module.exports = { place, list, updateAddress, cancel, cancelItem, validateCheckout };

@@ -1,7 +1,7 @@
 const Order = require('../models/Order');
 
 function createCursor(vendorId, start, endExclusive) {
-  const filter = { 'vendorOrders.vendor': vendorId };
+  const filter = { status: { $ne: 'cancelled' }, vendorOrders: { $elemMatch: { vendor: vendorId, status: { $ne: 'cancelled' } } } };
   if (start || endExclusive) {
     filter.createdAt = {};
     if (start) filter.createdAt.$gte = start;
@@ -28,10 +28,10 @@ function csvRow(values) {
 
 function* orderRows(order, vendorId) {
   const portion = order.vendorOrders.find(part => String(part.vendor) === String(vendorId));
-  if (!portion) return;
+  if (!portion || portion.status === 'cancelled') return;
   for (const item of order.items) {
     // Matching an order is not enough: it may contain another vendor's products.
-    if (String(item.vendor) !== String(vendorId)) continue;
+    if (String(item.vendor) !== String(vendorId) || item.status === 'cancelled') continue;
     yield csvRow([
       order._id, new Date(order.createdAt).toISOString(), item.name,
       item.quantity, (item.unitPricePaise / 100).toFixed(2),

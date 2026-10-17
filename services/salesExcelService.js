@@ -29,9 +29,9 @@ async function buildWorkbook(vendorId, start, endExclusive, signal) {
     for await (const order of cursor) {
       signal.throwIfAborted();
       const portion = order.vendorOrders.find(part => String(part.vendor) === String(vendorId));
-      if (!portion) continue;
+      if (!portion || portion.status === 'cancelled') continue;
       for (const item of order.items) {
-        if (String(item.vendor) !== String(vendorId)) continue;
+        if (String(item.vendor) !== String(vendorId) || item.status === 'cancelled') continue;
         if (++count > maxRows) {
           const error = new Error('Excel exports support up to 10,000 product rows. Narrow the dates or use CSV.');
           error.status = 422;

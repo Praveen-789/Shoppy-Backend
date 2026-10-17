@@ -2,12 +2,16 @@ const User = require('../models/User');
 const statuses = ['placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
 
 function overallStatus(portions) {
+  portions = portions.filter(portion => portion.status !== 'cancelled');
+  if (!portions.length) return 'cancelled';
   if (portions.every(portion => portion.status === 'delivered')) return 'delivered';
   if (portions.some(portion => portion.status === 'delivered')) return 'partially_delivered';
   if (portions.every(portion => portion.status === portions[0].status)) return portions[0].status;
   return 'processing';
 }
 function overallPayment(portions) {
+  portions = portions.filter(portion => portion.status !== 'cancelled');
+  if (!portions.length) return 'not_required';
   if (portions.every(portion => portion.paymentStatus === 'collected')) return 'collected';
   if (portions.some(portion => portion.paymentStatus === 'collected')) return 'partially_collected';
   return 'pending';
@@ -22,7 +26,7 @@ async function buildVendorOrders(items, { session = null, status = 'placed', pay
   }
   const vendors = await User.find({ _id: { $in: [...groups.keys()] } }).select('name').session(session).lean();
   return [...groups.entries()].map(([id, group]) => ({
-    ...group,
+    ...group, payablePaise: group.subtotalPaise,
     vendorName: vendors.find(vendor => String(vendor._id) === id)?.name || 'Vendor',
     status, paymentStatus, history: [{ status, at }],
   }));

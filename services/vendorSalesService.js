@@ -4,7 +4,7 @@ const Order = require('../models/Order');
 async function getSales(vendorId, start, endExclusive, chartPeriod) {
   // Aggregation does not automatically cast strings to MongoDB ObjectIds.
   const vendor = new mongoose.Types.ObjectId(vendorId);
-  const filter = { 'vendorOrders.vendor': vendor };
+  const filter = { 'vendorOrders.vendor': vendor, status: { $ne: 'cancelled' } };
   if (start || endExclusive) {
     filter.createdAt = {};
     if (start) filter.createdAt.$gte = start;
@@ -14,14 +14,15 @@ async function getSales(vendorId, start, endExclusive, chartPeriod) {
     { $match: filter },
     { $unwind: '$vendorOrders' },
     // The first match finds orders; this one removes other vendors' portions.
-    { $match: { 'vendorOrders.vendor': vendor } },
+    { $match: { 'vendorOrders.vendor': vendor, 'vendorOrders.status': { $ne: 'cancelled' } } },
+    { $set: { 'vendorOrders.payablePaise': { $ifNull: ['$vendorOrders.payablePaise', '$vendorOrders.subtotalPaise'] } } },
     { $facet: {
       dailySales: [
         { $match: { createdAt: { $gte: chartPeriod.start, $lt: chartPeriod.endExclusive } } },
         { $group: {
           _id: { $dateToString: { date: '$createdAt', format: '%Y-%m-%d', timezone: 'Asia/Kolkata' } },
           orderCount: { $sum: 1 },
-          orderedValuePaise: { $sum: '$vendorOrders.subtotalPaise' },
+          orderedValuePaise: { $sum: '$vendorOrders.payablePaise' },
         } },
         { $sort: { _id: 1 } },
       ],
@@ -29,16 +30,16 @@ async function getSales(vendorId, start, endExclusive, chartPeriod) {
         _id: null,
         orderCount: { $sum: 1 },
         deliveredOrderCount: { $sum: { $cond: [{ $eq: ['$vendorOrders.status', 'delivered'] }, 1, 0] } },
-        orderedValuePaise: { $sum: '$vendorOrders.subtotalPaise' },
-        deliveredSalesPaise: { $sum: { $cond: [{ $eq: ['$vendorOrders.status', 'delivered'] }, '$vendorOrders.subtotalPaise', 0] } },
-        collectedCodPaise: { $sum: { $cond: [{ $eq: ['$vendorOrders.paymentStatus', 'collected'] }, '$vendorOrders.subtotalPaise', 0] } },
-        pendingCodPaise: { $sum: { $cond: [{ $eq: ['$vendorOrders.paymentStatus', 'pending'] }, '$vendorOrders.subtotalPaise', 0] } },
+        orderedValuePaise: { $sum: '$vendorOrders.payablePaise' },
+        deliveredSalesPaise: { $sum: { $cond: [{ $eq: ['$vendorOrders.status', 'delivered'] }, '$vendorOrders.payablePaise', 0] } },
+        collectedCodPaise: { $sum: { $cond: [{ $eq: ['$vendorOrders.paymentStatus', 'collected'] }, '$vendorOrders.payablePaise', 0] } },
+        pendingCodPaise: { $sum: { $cond: [{ $eq: ['$vendorOrders.paymentStatus', 'pending'] }, '$vendorOrders.payablePaise', 0] } },
       } }, { $project: { _id: 0 } }],
       topProducts: [
         { $match: { 'vendorOrders.status': 'delivered' } },
         { $sort: { createdAt: -1, _id: -1 } },
         { $unwind: '$items' },
-        { $match: { 'items.vendor': vendor } },
+        { $match: { 'items.vendor': vendor, 'items.status': { $ne: 'cancelled' } } },
         { $group: {
           _id: '$items.product', name: { $first: '$items.name' },
           deliveredQuantity: { $sum: '$items.quantity' },
